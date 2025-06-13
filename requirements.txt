@@ -4,4 +4,4 @@ sounddevice
 numpy
 scipy
 requests
-streamlit-webrtc
+pyaudio
