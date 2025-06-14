@@ -7,6 +7,4 @@ requests
 soundfile
 pydub
 ffmpeg-python
-streamlit-webrtc
-platformdirs
 SpeechRecognition
