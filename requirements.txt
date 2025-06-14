@@ -9,4 +9,3 @@ pydub
 ffmpeg-python
 SpeechRecognition
 pyaudio
-pipwin
