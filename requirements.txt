@@ -8,5 +8,4 @@ soundfile
 pydub
 ffmpeg-python
 SpeechRecognition
-pipwin
-pyaudio
+streamlit-webrtc
