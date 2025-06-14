@@ -8,4 +8,3 @@ soundfile
 pydub
 ffmpeg-python
 SpeechRecognition
-pyaudio
