@@ -4,5 +4,6 @@ sounddevice
 numpy
 scipy
 requests
-pyaudio
-SpeechRecognition
+soundfile
+pydub
+ffmpeg-python
