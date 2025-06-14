@@ -170,11 +170,50 @@ def run_healhub_voice_app():
         import traceback
         traceback.print_exc()
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
     # Create a .env file if it doesn't exist
+ #   if not os.path.exists(".env"):
+  #      with open(".env", "w") as f:
+   #         f.write("SARVAM_API_KEY=your_sarvam_api_key_here\n")
+    #    print("📝 Created .env file. Please add your SARVAM_API_KEY.")
+    
+    #run_healhub_voice_app()
+
+
+if __name__ == "__main__":
+    import platform
+
+    IS_LOCAL = os.getenv("IS_LOCAL", "1") == "1"  # Or set via .env or environment
+
     if not os.path.exists(".env"):
         with open(".env", "w") as f:
             f.write("SARVAM_API_KEY=your_sarvam_api_key_here\n")
         print("📝 Created .env file. Please add your SARVAM_API_KEY.")
-    
-    run_healhub_voice_app()
+
+    if IS_LOCAL and platform.system() != "Linux":
+        print("🔊 Running locally with sounddevice...")
+        audio_capture = CleanAudioCapture(sample_rate=48000)
+        stt_service = SarvamSTTIntegration()
+
+        try:
+            audio_capture.start_recording()
+            while audio_capture.is_recording:
+                time.sleep(0.1)
+
+            cleaned_audio = audio_capture.get_cleaned_audio(apply_enhancement=True)
+
+            if len(cleaned_audio) > 0:
+                audio_capture.save_audio(cleaned_audio, "cleaned_audio.wav")
+                result = stt_service.transcribe_audio(cleaned_audio, sample_rate=audio_capture.sample_rate)
+                print(f"🎯 Transcription: {result['transcription']}")
+            else:
+                print("❌ No valid audio captured")
+
+        except KeyboardInterrupt:
+            audio_capture.stop_recording()
+            print("\n👋 Recording interrupted by user")
+        except Exception as e:
+            print(f"❌ Error: {e}")
+    else:
+        # Cloud/Streamlit fallback
+        run_healhub_voice_app()
