@@ -8,3 +8,5 @@ soundfile
 pydub
 ffmpeg-python
 SpeechRecognition
+pipwin
+pip install pyaudio
