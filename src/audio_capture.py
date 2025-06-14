@@ -1,4 +1,15 @@
-import sounddevice as sd
+import platform
+import streamlit as st
+
+try:
+    import sounddevice as sd  # already in your code
+    IS_LOCAL = True
+except ImportError:
+    IS_LOCAL = False
+
+from streamlit_webrtc import webrtc_streamer, AudioProcessorBase
+
+#import sounddevice as sd
 import soundfile as sf
 import numpy as np
 import queue
@@ -295,6 +306,40 @@ class SarvamSTTIntegration:
                 "transcription": "",
                 "language_detected": source_language
             }
+
+
+class WebRTCAudioProcessor(AudioProcessorBase):
+    def __init__(self):
+        self.buffer = b""
+
+    def recv(self, frame):
+        self.buffer += frame.to_ndarray().tobytes()
+        return frame
+
+def run_streamlit_webrtc_pipeline():
+    st.title("🎤 Voice Transcription via Streamlit Cloud")
+
+    webrtc_ctx = webrtc_streamer(
+        key="speech",
+        audio_receiver_size=256,
+        media_stream_constraints={"audio": True, "video": False},
+        audio_processor_factory=WebRTCAudioProcessor,
+        async_processing=True,
+    )
+
+    st.warning("▶️ Speak and then press the Transcribe button...")
+
+    if st.button("📝 Transcribe"):
+        if webrtc_ctx and webrtc_ctx.state.playing:
+            st.info("⏳ Capturing and preparing audio...")
+            audio_bytes = webrtc_ctx.audio_processor.buffer
+
+            if audio_bytes:
+                # TODO: Convert raw bytes to WAV and process (stub)
+                st.warning("⚠️ Add audio conversion + Sarvam STT call here.")
+            else:
+                st.error("❌ No audio received.")
+
 
 # Main usage example
 def main():
