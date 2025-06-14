@@ -9,3 +9,4 @@ pydub
 ffmpeg-python
 streamlit-webrtc
 platformdirs
+SpeechRecognition
