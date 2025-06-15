@@ -2,5 +2,5 @@
 
 # Demo
 
-![Demo of HealHub App](demo/demotest.gif)
+![Demo of HealHub App](demo/DemoTest.gif)
 
