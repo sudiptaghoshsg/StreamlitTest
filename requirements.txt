@@ -12,3 +12,4 @@ SpeechRecognition
 streamlit_mic_recorder
 fuzzywuzzy
 textdistance
+python-Levenshtein
