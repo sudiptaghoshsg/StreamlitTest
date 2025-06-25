@@ -80,31 +80,6 @@ LANGUAGE_MAP = {
 DISPLAY_LANGUAGES = list(LANGUAGE_MAP.keys())
 
 
-if not firebase_admin._apps:
-    # Load credentials from Streamlit secrets
-    try:
-        cred_dict = {
-            "type": st.secrets["firebase"]["type"],
-            "project_id": st.secrets["firebase"]["project_id"],
-            "private_key_id": st.secrets["firebase"]["private_key_id"],
-            "private_key": st.secrets["firebase"]["private_key"].replace('\\n', '\n'), # Important for newlines
-            "client_email": st.secrets["firebase"]["client_email"],
-            "client_id": st.secrets["firebase"]["client_id"],
-            "auth_uri": st.secrets["firebase"]["auth_uri"],
-            "token_uri": st.secrets["firebase"]["token_uri"],
-            "auth_provider_x509_cert_url": st.secrets["firebase"]["auth_provider_x509_cert_url"],
-            "client_x509_cert_url": st.secrets["firebase"]["client_x509_cert_url"],
-            "universe_domain": st.secrets["firebase"]["universe_domain"]
-        }
-        cred = credentials.Certificate(cred_dict)
-        firebase_admin.initialize_app(cred)
-        st.success("Firebase initialized!") # For debugging
-    except Exception as e:
-        st.error(f"Error initializing Firebase: {e}")
-        st.info("Please ensure your .streamlit/secrets.toml is correctly configured with Firebase credentials.")
-        st.stop() # Stop the app if Firebase fails to initialize
-
-db = firestore.client()
 
 # --- Helper Functions ---
 def add_message_to_conversation(role: str, content: str, lang_code: Optional[str] = None):
@@ -113,34 +88,61 @@ def add_message_to_conversation(role: str, content: str, lang_code: Optional[str
         message["lang"] = lang_code 
     st.session_state.conversation.append(message)
 
-def store_feedback(feedback_text, user_email, ml_generated_text, full_conversation):
-    try:
-        # Prepare feedback data
-        feedback_data = {
-            "timestamp": datetime.now(), # Store current timestamp
-            "user_email": user_email if user_email.strip() else "Anonymous",
-            "feedback_text": feedback_text,
-            "ml_generated_text": ml_generated_text,
-            "full_conversation": full_conversation,
-        }
-
-        # Add data to Firestore
-        # Create a new document in the 'feedback' collection
-        db.collection("feedback").add(feedback_data)
-        st.success("Thank you for your feedback! It has been submitted.")
-        return True
-        # Optionally clear the form
-        feedback_text = ""
-        user_email = ""
-    except Exception as e:
-        st.error(f"An error occurred while submitting feedback: {e}")
-        return False
-
-
 
 # --- Streamlit UI ---
 def main_ui():
-    st.set_page_config(page_title="HealHub Assistant", layout="wide", initial_sidebar_state="collapsed")
+    st.set_page_config(page_title="HealHub", layout="wide", initial_sidebar_state="collapsed")
+
+    if not firebase_admin._apps:
+        # Load credentials from Streamlit secrets
+        try:
+            cred_dict = {
+                "type": st.secrets["firebase"]["type"],
+                "project_id": st.secrets["firebase"]["project_id"],
+                "private_key_id": st.secrets["firebase"]["private_key_id"],
+                "private_key": st.secrets["firebase"]["private_key"].replace('\\n', '\n'), # Important for newlines
+                "client_email": st.secrets["firebase"]["client_email"],
+                "client_id": st.secrets["firebase"]["client_id"],
+                "auth_uri": st.secrets["firebase"]["auth_uri"],
+                "token_uri": st.secrets["firebase"]["token_uri"],
+                "auth_provider_x509_cert_url": st.secrets["firebase"]["auth_provider_x509_cert_url"],
+                "client_x509_cert_url": st.secrets["firebase"]["client_x509_cert_url"],
+                "universe_domain": st.secrets["firebase"]["universe_domain"]
+            }
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred)
+        except Exception as e:
+            st.error(f"Error initializing Firebase: {e}")
+            # st.info("Please ensure your .streamlit/secrets.toml is correctly configured with Firebase credentials.")
+            st.stop() # Stop the app if Firebase fails to initialize
+
+    db = firestore.client()
+
+    def store_feedback(feedback_text, user_email, ml_generated_text, full_conversation):
+        try:
+            # Prepare feedback data
+            feedback_data = {
+                "timestamp": datetime.now(), # Store current timestamp
+                "user_email": user_email if user_email.strip() else "Anonymous",
+                "feedback_text": feedback_text,
+                "ml_generated_text": ml_generated_text,
+                "full_conversation": full_conversation,
+            }
+
+            # Add data to Firestore
+            # Create a new document in the 'feedback' collection
+            db.collection("feedback").add(feedback_data)
+            st.success("Thank you for your feedback! It has been submitted.")
+            return True
+            # Optionally clear the form
+            feedback_text = ""
+            user_email = ""
+        except Exception as e:
+            st.error(f"An error occurred while submitting feedback: {e}")
+            return False
+
+
+
     # st.caption("Your AI healthcare companion. Supporting English and Popular Indic Languages.")
     header_css = """
         <style>
@@ -308,7 +310,7 @@ def main_ui():
                 with spinner_placeholder.info("🔬 Generating preliminary assessment..."):
                     assessment = st.session_state.symptom_checker_instance.generate_preliminary_assessment()
                     try:
-                        assessment_str = f"### {util.translate_text('Preliminary Health Assessment', user_lang)}:\n\n"
+                        assessment_str = f"<h4> {util.translate_text('Preliminary Health Assessment', user_lang)}:</h4>\n\n"
                         assessment_str += f"**{util.translate_text('Summary', user_lang)}:** {util.translate_text(assessment.get('assessment_summary', 'N/A'), user_lang)}\n\n"
                         assessment_str += f"**{util.translate_text('Suggested Severity', user_lang)}:** {util.translate_text(assessment.get('suggested_severity', 'N/A'), user_lang)}\n\n"
                         assessment_str += f"**{util.translate_text('Recommended Next Steps', user_lang)}:**\n"
@@ -452,10 +454,10 @@ def main_ui():
                     """, unsafe_allow_html=True)
                     clutter, col1, col2, col3, clutter = st.columns([1.75, 1, 1, 1, 30])
                     audio_bytes = None
+                    good_feedback = False
                     with col1:
                         if st.button("👍", key=f"good_{idx}", type="tertiary", help="Good response"):
-                            handle_good_feedback(idx, content)
-
+                            good_feedback = True
                     with col2:
                         if st.button("👎", key=f"bad_{idx}", type="tertiary", help="Bad response"):
                             st.session_state[f"negetive_feedback_{idx}"] = True
@@ -465,6 +467,8 @@ def main_ui():
                             with spinner_placeholder.info("Synthesizing speech..."):
                                 audio_bytes = util.synthesize_speech(content, user_lang)
                             
+                    if good_feedback is True:
+                        handle_good_feedback(idx, content)
                     if audio_bytes is not None:
                         st.audio(audio_bytes, format="audio/wav")
                     if st.session_state.get(f"negetive_feedback_{idx}", False):
@@ -518,10 +522,11 @@ def main_ui():
         
         # Define column width ratios for the input area, send button, and voice recording button
         
-        input_label = "Type your answer here..." if st.session_state.symptom_checker_active and st.session_state.pending_symptom_question_data else "Type your health query here..."
+        input_label = "Type your answer here...(Ctrl.+Enter to send)" if st.session_state.symptom_checker_active and st.session_state.pending_symptom_question_data else "Type your health query here...(Ctrl.+Enter to send)"
     
         # Text area widget - its current value is stored in st.session_state.text_query_input_area due to its key
-        st.text_area(input_label, height=70, key="text_query_input_area", disabled=is_recording)
+        st.text_area(input_label, height=70, key="text_query_input_area", disabled=is_recording, on_change=handle_text_submission)
+        # st.text_input(input_label, key="text_query_input_area", disabled=is_recording, on_change=handle_text_submission)
         
         # user_input = st.text_input("Type your query or use voice:", key="user_input")
         
