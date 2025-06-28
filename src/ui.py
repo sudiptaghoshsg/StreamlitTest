@@ -522,10 +522,10 @@ def main_ui():
         
         # Define column width ratios for the input area, send button, and voice recording button
         
-        input_label = "Type your answer here...(Ctrl.+Enter to send)" if st.session_state.symptom_checker_active and st.session_state.pending_symptom_question_data else "Type your health query here...(Ctrl.+Enter to send)"
+        input_label = "Type your answer here..." if st.session_state.symptom_checker_active and st.session_state.pending_symptom_question_data else "Type your health query here..."
     
         # Text area widget - its current value is stored in st.session_state.text_query_input_area due to its key
-        st.text_area(input_label, height=70, key="text_query_input_area", disabled=is_recording, on_change=handle_text_submission)
+        st.text_area(input_label, height=70, key="text_query_input_area", disabled=is_recording)
         # st.text_input(input_label, key="text_query_input_area", disabled=is_recording, on_change=handle_text_submission)
         
         # user_input = st.text_input("Type your query or use voice:", key="user_input")
